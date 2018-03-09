@@ -3,7 +3,12 @@
 #Philipp "3D" ten Brink
 #2018-01-02
 #donations: VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
-
+# **********************************************************************
+# Forked by Keijo D. Putt
+# 2018-03-09
+# Correct a bug where building GCC along with everything else 
+# sends the cpuminer binary into $DIR$/gcc/build
+# **********************************************************************
 #GNU General Public License v3.0 see LICENSE
 
 if [ "$(id -u)" != "0" ]; then
@@ -32,7 +37,7 @@ folder () {
 	else
 		answer="miner"
 	fi
-	
+	workdir=$answer
 	mkdir $answer
 	cd $answer
 
@@ -125,7 +130,7 @@ compilex86_64 () {
 			git clone https://github.com/fireworm71/veriumMiner > /dev/null 2>&1
 			cd veriumMiner 
 			./build.sh > /dev/null 2>&1
-                        mv cpuminer ../
+                        mv cpuminer $workdir
 
 		  break;;
 		   
@@ -303,7 +308,7 @@ runme () {
 	  case $answer in
 	   [yY]* )  
 			poolcreds $2 > RunMe
-			chmod +x RunMe
+			chmod a+x RunMe
 			echo "Finished installation. Use ./RunMe in your choosen directory to start mining."
 		  break;;
 		   
