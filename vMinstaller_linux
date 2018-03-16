@@ -5,9 +5,10 @@
 #donations: VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
 # **********************************************************************
 # Forked by Keijo D. Putt
-# 2018-03-09
-# Correct a bug where building GCC along with everything else 
-# created the cpuminer binary and RunMe script into $DIR$/gcc/build
+# 2018-03-09 Fork 1
+# 2018-03-16 Rev 1.01
+# Corrects a bug where building GCC along with everything else 
+# creates the cpuminer binary and RunMe script into $DIR$/gcc/build
 # **********************************************************************
 #GNU General Public License v3.0 see LICENSE
 
@@ -29,16 +30,17 @@ pkgmanager () {
 
 }
 
-
 folder () { 
 
 	if [ $1 -eq 0 ]; then 
-		read -p "Input foldername where to create the files: " answer
+		read -p "Input folder name where to create the files: " answer
 	else
 		answer="miner"
+		fullpath=$(pwd)/$answer
+		answer=$fullpath
 	fi
-	workdir=$answer
-	mkdir $answer
+	[ "$answer" != "${answer#/}" ] && workdir=$answer || workdir=$(pwd)/$answer
+	mkdir -p $answer
 	cd $answer
 
 }
