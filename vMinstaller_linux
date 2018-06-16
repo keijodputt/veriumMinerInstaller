@@ -5,9 +5,11 @@
 #donations: VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
 # **********************************************************************
 # Forked by Keijo D. Putt
-# 2018-03-09 Fork 2
+# 2018-06-16 Fork 3
+# Adds SUDO_USER to properly chown the cpuminer directory and subs
+# 2018-05-09 Fork 2 - not PR'd - Internal
 # Adds the option to tee a logfile with RunMe
-# 2018-03-09 Fork 1
+# 2018-03-09 Fork 1 (deprecated)
 # 2018-03-16 Rev 1.01
 # Corrects a bug where building GCC along with everything else 
 # creates the cpuminer binary and RunMe script into $DIR$/gcc/build
@@ -32,17 +34,16 @@ pkgmanager () {
 
 }
 
+
 folder () { 
 
 	if [ $1 -eq 0 ]; then 
-		read -p "Input folder name where to create the files: " answer
+		read -p "Input foldername where to create the files: " answer
 	else
 		answer="miner"
-		fullpath=`dirname "$0"`/$answer
-		answer=$fullpath
 	fi
-	[ "$answer" != "${answer#/}" ] && workdir=$answer || workdir=`dirname "$0"`/$answer
-	mkdir -p $answer
+	
+	mkdir $answer
 	cd $answer
 
 }
@@ -63,14 +64,14 @@ gccinstall () {
 	   [yY]* )  
 			if [ "$pkg" = "apt-get" ]; then
 
-                                DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install unzip flex make automake autoconf pkg-config > /dev/null 2>&1
 			
 			elif [ "$pkg" = "yum" ]; then
 	
 				yum update -y > /dev/null 2>&1
-                                yum install -y unzip bzip2 gcc flex make automake autoconf wget > /dev/null 2>&1
+				yum install -y unzip bzip2 gcc flex make automake autoconf wget > /dev/null 2>&1
 
 			elif [ "$pkg" = "apk" ]; then
 	
@@ -78,15 +79,16 @@ gccinstall () {
 
 			fi
 
-                        wget https://github.com/gcc-mirror/gcc/archive/gcc-7_2_0-release.zip > /dev/null 2>&1
-			unzip gcc-7_2_0-release.zip > /dev/null 2>&1
-			cd gcc-gcc-7_2_0-release
+			wget https://github.com/gcc-mirror/gcc/archive/gcc-8_1_0-release.zip > /dev/null 2>&1
+			unzip gcc-8_1_0-release.zip > /dev/null 2>&1
+			cd gcc-gcc-8_1_0-release
 			./contrib/download_prerequisites > /dev/null 2>&1
 			mkdir build && cd build
 			../configure --enable-languages=c,c++ --disable-multilib > /dev/null 2>&1
 			make -j 8
 			make install
-			rm -rf gcc-7_2_0-release.zip gcc-gcc-7_2_0-release
+			cd ../../
+			rm -rf gcc-8_1_0-release.zip gcc-gcc-8_1_0-release
 
 		  break;;
 		   
@@ -116,7 +118,7 @@ compilex86_64 () {
 	   [yY]* )  
 			if [ "$pkg" = "apt-get" ]; then
 
-                                DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
 
@@ -134,14 +136,15 @@ compilex86_64 () {
 			git clone https://github.com/fireworm71/veriumMiner > /dev/null 2>&1
 			cd veriumMiner 
 			./build.sh > /dev/null 2>&1
-                        mv cpuminer $workdir
+                        mv cpuminer ../
+			chown -R $SUDO_USER:$SUDO_USER ../
 
 		  break;;
 		   
 	   [nN]* )	
 			if [ "$pkg" = "apt-get" ]; then
 
-			        DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
 
@@ -152,14 +155,15 @@ compilex86_64 () {
 
 			elif [ "$pkg" = "apk" ]; then
 
-                                echo "under construction"
+				echo "under construction"
 
-                        fi
+			fi
 
 			wget https://github.com/fireworm71/veriumMiner/releases/download/v1.4/cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
 			unzip cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
 			chmod +x cpuminer
 			rm -rf cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
+			chown -R $SUDO_USER:$SUDO_USER .
 
 		  break;; 
 		   
@@ -194,6 +198,7 @@ compilearmv71 () {
 				./configure CFLAGS="-mfpu=neon" --with-crypto --with-curl > /dev/null 2>&1
 				make clean > /dev/null 2>&1 && make > /dev/null 2>&1
 				echo "./veriumMiner/cpuminer"
+				chown -R $SUDO_USER:$SUDO_USER ../
 		  break;;
 		   
 	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
@@ -204,6 +209,7 @@ compilearmv71 () {
 				chmod +x cpuminer
 				rm -rf cpuminer_1.4_linux_armv7_NEON_O2_GCC7.zip
 				echo "./cpuminer"
+				chown -R $SUDO_USER:$SUDO_USER .
 		  break;; 
 		   
 	  * )    echo "Yes/No [yY/nN]";;
@@ -233,6 +239,7 @@ compileaarch64 () {
 				cd veriumMiner
 				./build.sh > /dev/null 2>&1
 				echo "./veriumMiner/cpuminer"
+				chown -R $SUDO_USER:$SUDO_USER ../
 		  break;;
 		   
 	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
@@ -243,6 +250,7 @@ compileaarch64 () {
 				chmod +x cpuminer
 				rm -rf cpuminer_1.4_linux_armv8_O3_GCC7.zip
 				echo "./cpuminer"
+				chown -R $SUDO_USER:$SUDO_USER .
 		  break;; 
 		   
 	  * )    echo "Yes/No [yY/nN]";;
@@ -311,9 +319,10 @@ runme () {
 	  # (2) handle the input we were given 
 	  case $answer in
 	   [yY]* )  
-			poolcreds $2 > $workdir/RunMe
-			chmod a+x $workdir/RunMe
-			echo "Finished installation. Use ./RunMe in your chosen directory to start mining."
+			poolcreds $2 > RunMe
+			chmod +x RunMe
+			chown -R $SUDO_USER:$SUDO_USER .
+			echo "Finished installation. Use ./RunMe in your choosen directory to start mining."
 		  break;;
 		   
 	   [nN]* )
@@ -336,11 +345,11 @@ poolcreds () {
 			read -p "enable api port? Yes/No [yY/nN] " answer
                         case $answer in
 			 [yY]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass --api-bind 0.0.0.0:4048 | tee `dirname "$0"`/m$(date +%s).log"
+					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass --api-bind 0.0.0.0:4048 | tee log.$poolurl.$poolport.$username.$workname.$(date +%s).txt"
 					;;
 
 			 [nN]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass | tee `dirname "$0"`/m$(date +%s).log"
+					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass | tee log.$poolurl.$poolport.$username.$workname.$(date +%s).txt"
 					;;
 
   			 * )    echo "Yes/No [yY/nN]";;
@@ -368,7 +377,8 @@ do
    [yY]* )  default=1
 	  break;;
 	   
-   [nN]* )   default=0
+   [nN]* )
+			default=0
 	  break;; 
 	   
   * )    echo "Yes/No [yY/nN]";;
