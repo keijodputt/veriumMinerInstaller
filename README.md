@@ -1,6 +1,6 @@
 # veriumMinerInstaller
 
-This script will install @fireworm71 's veriumMiner (https://github.com/fireworm71/veriumMiner).
+This script will compiule or copy @VeriConomy 's veriumMiner (https://github.com/VeriConomy/veriumMiner).
 
 PLEASE READ CAREFULLY!
 

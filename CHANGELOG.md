@@ -1,3 +1,11 @@
+# 2.0.1
+2023-04-27
+**UPDATES**
+| Changed: Warning text for obsolete GCC8 in systems that run GCC9 already
+| Changed: We're downloading/compiling VeriConomy's veriumMiner: 1.6 compiling, 1.5 downlaoding
++ Added: Folders will get chown'd to the user in sudo instead of being property of root.
+
+
 # 2.0.0
 
 **UPDATES**
