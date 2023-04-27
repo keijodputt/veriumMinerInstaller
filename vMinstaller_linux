@@ -1,19 +1,10 @@
 #!/bin/bash
 
 #Philipp "3D" ten Brink
-#2018-01-02
+#2023-04-27
 #donations: VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
-# **********************************************************************
-# Forked by Keijo D. Putt
-# 2018-06-16 Fork 3
-# Adds SUDO_USER to properly chown the cpuminer directory and subs
-# 2018-05-09 Fork 2 - not PR'd - Internal
-# Adds the option to tee a logfile with RunMe
-# 2018-03-09 Fork 1 (deprecated)
-# 2018-03-16 Rev 1.01
-# Corrects a bug where building GCC along with everything else 
-# creates the cpuminer binary and RunMe script into $DIR$/gcc/build
-# **********************************************************************
+
+# Edit 2020-01-30: Replaced GCC source since it was gone from Github
 #GNU General Public License v3.0 see LICENSE
 
 if [ "$(id -u)" != "0" ]; then
@@ -54,7 +45,7 @@ gccinstall () {
 	do 
 	
 		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile newest GCC version(takes very long)? Yes/No [yY/nN] " answer 
+			read -p "Download and compile optimized GCC version(takes very long, not recommended on new systems)? Yes/No [yY/nN] " answer 
 		else
 			answer="n"
 		fi
@@ -79,9 +70,9 @@ gccinstall () {
 
 			fi
 
-			wget https://github.com/gcc-mirror/gcc/archive/gcc-8_1_0-release.zip > /dev/null 2>&1
-			unzip gcc-8_1_0-release.zip > /dev/null 2>&1
-			cd gcc-gcc-8_1_0-release
+			wget https://ftp.gnu.org/gnu/gcc/gcc-8.1.0/gcc-8.1.0.tar.gz > /dev/null 2>&1
+			tar xzf gcc-8.1.0.tar.gz > /dev/null 2>&1; mv gcc-8.1.0 gcc-8_1_0-release
+			cd gcc-8_1_0-release
 			./contrib/download_prerequisites > /dev/null 2>&1
 			mkdir build && cd build
 			../configure --enable-languages=c,c++ --disable-multilib > /dev/null 2>&1
@@ -108,7 +99,7 @@ compilex86_64 () {
 	do 
 	
 		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile newest miner version(takes longer)? Yes/No [yY/nN] " answer 
+			read -p "Download and compile newest 1.6 miner version(takes longer)? Yes/No [yY/nN] " answer 
 		else
 			answer="y"
 		fi
@@ -120,7 +111,7 @@ compilex86_64 () {
 
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev build-essential libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
 
 			elif [ "$pkg" = "yum" ]; then
 
@@ -133,11 +124,11 @@ compilex86_64 () {
 
 			fi
 
-			git clone https://github.com/fireworm71/veriumMiner > /dev/null 2>&1
+			git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
 			cd veriumMiner 
 			./build.sh > /dev/null 2>&1
                         mv cpuminer ../
-			chown -R $SUDO_USER:$SUDO_USER ../
+			chown -R $SUDO_USER:$SUDO_USER ../*
 
 		  break;;
 		   
@@ -146,7 +137,7 @@ compilex86_64 () {
 
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
 
 			elif [ "$pkg" = "yum" ]; then
 
@@ -159,12 +150,11 @@ compilex86_64 () {
 
 			fi
 
-			wget https://github.com/fireworm71/veriumMiner/releases/download/v1.4/cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
-			unzip cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
+			wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/veriumMiner_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
+			unzip cpuminer_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
 			chmod +x cpuminer
-			rm -rf cpuminer_1.4_linux_x64_O2_GCC7.zip > /dev/null 2>&1
-			chown -R $SUDO_USER:$SUDO_USER .
-
+			rm -rf cpuminer_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
+			chown -R $SUDO_USER:$SUDO_USER ../*
 		  break;; 
 		   
 	  * )    echo "Yes/No [yY/nN]";;
@@ -191,25 +181,25 @@ compilearmv71 () {
 	  case $answer in
 	   [yY]* )  DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
-				git clone https://github.com/fireworm71/veriumMiner > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
+				git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
 				cd veriumMiner
 				./build.sh > /dev/null 2>&1
 				./configure CFLAGS="-mfpu=neon" --with-crypto --with-curl > /dev/null 2>&1
 				make clean > /dev/null 2>&1 && make > /dev/null 2>&1
 				echo "./veriumMiner/cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../
+				chown -R $SUDO_USER:$SUDO_USER ../*
 		  break;;
 		   
 	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
-				wget https://github.com/fireworm71/veriumMiner/releases/download/v1.4/cpuminer_1.4_linux_armv7_NEON_O2_GCC7.zip > /dev/null 2>&1
-				unzip cpuminer_1.4_linux_armv7_NEON_O2_GCC7.zip > /dev/null 2>&1
+				wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip > /dev/null 2>&1
+				unzip cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip > /dev/null 2>&1
 				chmod +x cpuminer
-				rm -rf cpuminer_1.4_linux_armv7_NEON_O2_GCC7.zip
+				rm -rf cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip
 				echo "./cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER .
+				chown -R $SUDO_USER:$SUDO_USER ../*
 		  break;; 
 		   
 	  * )    echo "Yes/No [yY/nN]";;
@@ -234,23 +224,23 @@ compileaarch64 () {
 	  case $answer in
 	   [yY]* )  DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
-				git clone https://github.com/fireworm71/veriumMiner > /dev/null 2>&1
+				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
+				git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
 				cd veriumMiner
 				./build.sh > /dev/null 2>&1
 				echo "./veriumMiner/cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../
+				chown -R $SUDO_USER:$SUDO_USER ../*
 		  break;;
 		   
 	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
 				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
-				wget https://github.com/fireworm71/veriumMiner/releases/download/v1.4/cpuminer_1.4_linux_armv8_O3_GCC7.zip > /dev/null 2>&1
-				unzip cpuminer_1.4_linux_armv8_O3_GCC7.zip > /dev/null 2>&1
+				wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/cpuminer_1.5_linux_armv8_O2_GCC7.zip > /dev/null 2>&1
+				unzip cpuminer_1.5_linux_armv8_O2_GCC7.zip > /dev/null 2>&1
 				chmod +x cpuminer
-				rm -rf cpuminer_1.4_linux_armv8_O3_GCC7.zip
+				rm -rf cpuminer_1.5_linux_armv8_O2_GCC7.zip
 				echo "./cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER .
+				chown -R $SUDO_USER:$SUDO_USER ../*
 		  break;; 
 		   
 	  * )    echo "Yes/No [yY/nN]";;
@@ -276,7 +266,7 @@ hugepages () {
 	   [yY]* )  threads=$(grep -c ^processor /proc/cpuinfo)
 
 				set=$(grep avx2 /proc/cpuinfo)
-				if [[ -z "$set" ]]
+				if [ -z "$set" ]
 				then
 						set=193
 				else
@@ -321,7 +311,6 @@ runme () {
 	   [yY]* )  
 			poolcreds $2 > RunMe
 			chmod +x RunMe
-			chown -R $SUDO_USER:$SUDO_USER .
 			echo "Finished installation. Use ./RunMe in your choosen directory to start mining."
 		  break;;
 		   
@@ -345,17 +334,18 @@ poolcreds () {
 			read -p "enable api port? Yes/No [yY/nN] " answer
                         case $answer in
 			 [yY]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass --api-bind 0.0.0.0:4048 | tee log.$poolurl.$poolport.$username.$workname.$(date +%s).txt"
+					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass --api-bind 0.0.0.0:4048"
 					;;
 
 			 [nN]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass | tee log.$poolurl.$poolport.$username.$workname.$(date +%s).txt"
+					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass"
 					;;
 
   			 * )    echo "Yes/No [yY/nN]";;
 
 			esac
 			echo "$string"
+			chown -R $SUDO_USER:$SUDO_USER ../
 }
 
 type=$(lscpu | grep -m 1 "Architecture:" | sed 's/[^=:]*[=:] //' | sed 's|[/ ]||g')
