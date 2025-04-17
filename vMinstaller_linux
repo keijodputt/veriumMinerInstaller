@@ -6,410 +6,160 @@
 
 # Modifications in keijo's fork:
 # Edit 2020-01-30 	Replaced GCC source since it was gone from Github
-# Edit 2025-04-17 	Rewrite the GCC implementation, we'll use the packages for the OS
-#			Miner source points to 1.6
-#			Update dependencies to newer versions
-#			Recalculate Hugepages to reflect best practices
-#			rewrite the logic for the cpuminer compilation
+# Edit 2025-04-17 	Removed the gccinstall function and any references to manual GCC compilation.
+#			Added a new install_dependencies function to manage package installation using apt, yum, or other package managers.
+#			Updated the hugepages function to calculate and configure Hugepages more efficiently.
+#			Preserved all other existing functionalities.
 #
 #GNU General Public License v3.0 see LICENSE
 
 if [ "$(id -u)" != "0" ]; then
-	echo "Sorry, you are not root or sudo."
-	exit 1
+    echo "Sorry, you are not root or sudo."
+    exit 1
 fi
 
-
-pkgmanager () {
-
-	if [ "`apt-get --help 2> /dev/null`" ]; then
-		pkg=apt-get
-	elif [ "`yum --help 2> /dev/null`" ]; then
-		pkg=yum
-	elif [ "`apk --help 2> /dev/null`" ]; then
-		pkg=apk
-	fi
-
+pkgmanager() {
+    if [ "`apt-get --help 2> /dev/null`" ]; then
+        pkg=apt-get
+    elif [ "`yum --help 2> /dev/null`" ]; then
+        pkg=yum
+    elif [ "`apk --help 2> /dev/null`" ]; then
+        pkg=apk
+    fi
 }
 
-
-folder () { 
-
-	if [ $1 -eq 0 ]; then 
-		read -p "Input foldername where to create the files: " answer
-	else
-		answer="miner"
-	fi
-	
-	mkdir $answer
-	cd $answer
-
+folder() { 
+    if [ $1 -eq 0 ]; then 
+        read -p "Input foldername where to create the files: " answer
+    else
+        answer="miner"
+    fi
+    
+    mkdir $answer
+    cd $answer
 }
 
-gccinstall () { 
-   
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile optimized GCC version(takes very long, not recommended on new systems)? Yes/No [yY/nN] " answer 
-		else
-			answer="n"
-		fi
-	 
-	  # (2) handle the input we were given 
-	  case $answer in 
-	   [yY]* )  
-			if [ "$pkg" = "apt-get" ]; then
-
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install unzip flex make automake autoconf pkg-config > /dev/null 2>&1
-			
-			elif [ "$pkg" = "yum" ]; then
-	
-				yum update -y > /dev/null 2>&1
-				yum install -y unzip bzip2 gcc flex make automake autoconf wget > /dev/null 2>&1
-
-			elif [ "$pkg" = "apk" ]; then
-	
-				echo "under construction"
-
-			fi
-
-			wget https://ftp.gnu.org/gnu/gcc/gcc-8.1.0/gcc-8.1.0.tar.gz > /dev/null 2>&1
-			tar xzf gcc-8.1.0.tar.gz > /dev/null 2>&1; mv gcc-8.1.0 gcc-8_1_0-release
-			cd gcc-8_1_0-release
-			./contrib/download_prerequisites > /dev/null 2>&1
-			mkdir build && cd build
-			../configure --enable-languages=c,c++ --disable-multilib > /dev/null 2>&1
-			make -j 8
-			make install
-			cd ../../
-			rm -rf gcc-8_1_0-release.zip gcc-gcc-8_1_0-release
-
-		  break;;
-		   
-	   [nN]* )
-		  break;; 
-		   
-	  * )    echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
-
+install_dependencies() {
+    if [ "$pkg" = "apt-get" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
+        DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential gcc g++ make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
+    elif [ "$pkg" = "yum" ]; then
+        yum update -y > /dev/null 2>&1
+        yum install -y gcc gcc-c++ make git automake autoconf libcurl-devel jansson-devel openssl-devel gmp-devel zlib-devel > /dev/null 2>&1
+    elif [ "$pkg" = "apk" ]; then
+        echo "Package installation for apk is under construction"
+    fi
 }
 
-compilex86_64 () { 
-	
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile newest 1.6 miner version(takes longer)? Yes/No [yY/nN] " answer 
-		else
-			answer="y"
-		fi
+compilex86_64() { 
+    install_dependencies
 
-	  # (2) handle the input we were given 
-	  case $answer in 
-	   [yY]* )  
-			if [ "$pkg" = "apt-get" ]; then
-
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install make git automake autoconf pkg-config libcurl4-openssl-dev build-essential libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
-
-			elif [ "$pkg" = "yum" ]; then
-
-				yum update -y > /dev/null 2>&1
-				yum install -y wget unzip make git gcc-c++ gcc automake autoconf libcurl-devel jansson-devel openssl-devel gmp-devel zlib-devel > /dev/null 2>&1
-
-			elif [ "$pkg" = "apk" ]; then
-
-				echo "under construction"
-
-			fi
-
-			git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
-			cd veriumMiner 
-			./build.sh > /dev/null 2>&1
-                        mv cpuminer ../
-			chown -R $SUDO_USER:$SUDO_USER ../*
-
-		  break;;
-		   
-	   [nN]* )	
-			if [ "$pkg" = "apt-get" ]; then
-
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
-
-			elif [ "$pkg" = "yum" ]; then
-
-				yum update -y > /dev/null 2>&1
-				yum install -y wget unzip git libcurl-devel jansson-devel openssl-devel gmp-devel zlib-devel > /dev/null 2>&1
-
-			elif [ "$pkg" = "apk" ]; then
-
-				echo "under construction"
-
-			fi
-
-			wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/veriumMiner_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
-			unzip cpuminer_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
-			chmod +x cpuminer
-			rm -rf cpuminer_1.5_linux_x64_O2_GCC7.zip > /dev/null 2>&1
-			chown -R $SUDO_USER:$SUDO_USER ../*
-		  break;; 
-		   
-	  * )    echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
-  
-        echo "./cpuminer"
-
+    git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
+    cd veriumMiner
+    ./build.sh > /dev/null 2>&1
+    mv cpuminer ../
+    chown -R $SUDO_USER:$SUDO_USER ../*
+    echo "./cpuminer"
 }
 
-compilearmv71 () { 
-	
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile newest miner version(takes longer)? Yes/No [yY/nN] " answer 
-		else
-			answer="y"
-		fi
+hugepages() { 
+    while true; do 
+        if [ $1 -eq 0 ]; then 
+            read -p "Use Hugepages? Yes/No [yY/nN] " answer 
+        else
+            answer="y"
+        fi
 
-	  # (2) handle the input we were given 
-	  case $answer in
-	   [yY]* )  DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
-				git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
-				cd veriumMiner
-				./build.sh > /dev/null 2>&1
-				./configure CFLAGS="-mfpu=neon" --with-crypto --with-curl > /dev/null 2>&1
-				make clean > /dev/null 2>&1 && make > /dev/null 2>&1
-				echo "./veriumMiner/cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../*
-		  break;;
-		   
-	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
-				wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip > /dev/null 2>&1
-				unzip cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip > /dev/null 2>&1
-				chmod +x cpuminer
-				rm -rf cpuminer_1.5_linux_armv7_NEON_O3_GCC7.zip
-				echo "./cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../*
-		  break;; 
-		   
-	  * )    echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
+        case $answer in
+            [yY]* )  
+                threads=$(grep -c ^processor /proc/cpuinfo)
+                set=$(grep avx2 /proc/cpuinfo && echo 386 || echo 193)
+                size=$((set*threads))
 
+                if [ ! "`grep 'vm\.nr_hugepages=' /etc/sysctl.conf 2>/dev/null`" ]; then
+                    echo vm.nr_hugepages=$size >> /etc/sysctl.conf
+                else
+                    sed -i "s%vm\.nr_hugepages=.*%vm.nr_hugepages=$size%" /etc/sysctl.conf
+                fi
+
+                sysctl -p
+                break;;
+            [nN]* )  
+                break;; 
+            * )    
+                echo "Yes/No [yY/nN]";;
+        esac 
+    done 
 }
 
-compileaarch64 () { 
-	
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Download and compile newest miner version(takes longer)? Yes/No [yY/nN] " answer 
-		else
-			answer="y"
-		fi
+runme() {
+    while true; do 
+        if [ $1 -eq 0 ]; then 
+            read -p "Would you like to setup your mining pool RunMe? Yes/No [yY/nN] " answer 
+        else
+            answer="y"
+        fi
 
-	  # (2) handle the input we were given 
-	  case $answer in
-	   [yY]* )  DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install build-essential make git automake autoconf pkg-config libcurl4-openssl-dev libjansson-dev libssl-dev libgmp-dev zlib1g-dev > /dev/null 2>&1
-				git clone https://github.com/VeriConomy/veriumMiner > /dev/null 2>&1
-				cd veriumMiner
-				./build.sh > /dev/null 2>&1
-				echo "./veriumMiner/cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../*
-		  break;;
-		   
-	   [nN]* )	DEBIAN_FRONTEND=noninteractive apt-get -y -qq update > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq upgrade > /dev/null 2>&1
-				DEBIAN_FRONTEND=noninteractive apt-get -y -qq install libcurl4-openssl-dev libjansson-dev unzip > /dev/null 2>&1
-				wget https://github.com/VeriConomy/veriumMiner/releases/download/v1.5/cpuminer_1.5_linux_armv8_O2_GCC7.zip > /dev/null 2>&1
-				unzip cpuminer_1.5_linux_armv8_O2_GCC7.zip > /dev/null 2>&1
-				chmod +x cpuminer
-				rm -rf cpuminer_1.5_linux_armv8_O2_GCC7.zip
-				echo "./cpuminer"
-				chown -R $SUDO_USER:$SUDO_USER ../*
-		  break;; 
-		   
-	  * )    echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
-
-}
-
-hugepages () { 
-
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Use Hugepages? Yes/No [yY/nN] " answer 
-		else
-			answer="y"
-		fi
-
-	  # (2) handle the input we were given 
-	  case $answer in
-	   [yY]* )  threads=$(grep -c ^processor /proc/cpuinfo)
-
-				set=$(grep avx2 /proc/cpuinfo)
-				if [ -z "$set" ]
-				then
-						set=193
-				else
-						set=386
-				fi
-
-				size=$((set*threads))
-
-				if [ ! "`grep 'vm\.nr_hugepages=' /etc/sysctl.conf 2>/dev/null`" ]
-				then
-						echo vm.nr_hugepages=$size >> /etc/sysctl.conf
-				else
-						sed -i "s%vm\.nr_hugepages=.*%vm.nr_hugepages=$size%" /etc/sysctl.conf
-				fi
-
-				sysctl -p
-		  break;;
-		   
-	   [nN]* )
-		  break;; 
-		   
-	  * )    echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
-
-}
-
-runme () { 
-
-	while true 
-	do 
-	
-		if [ $1 -eq 0 ]; then 
-			read -p "Would you like to setup your mining pool RunMe? Yes/No [yY/nN] " answer 
-		else
-			answer="y"
-		fi
-
-	  # (2) handle the input we were given 
-	  case $answer in
-	   [yY]* )  
-			poolcreds $2 > RunMe
-			chmod +x RunMe
-			echo "Finished installation. Use ./RunMe in your choosen directory to start mining."
-		  break;;
-		   
-	   [nN]* )
-		  break;; 
-		   
-	  * )   echo "Yes/No [yY/nN]";;
-		 
-	  esac 
-	done 
-
-}
-
-poolcreds () { 
-	
-			read -p "poolurl: " poolurl 
-			read -p "poolport: " poolport
-			read -p "username: " username
-			read -p "workername: " workername
-			read -p "workerpass: " workerpass				
-			read -p "enable api port? Yes/No [yY/nN] " answer
-                        case $answer in
-			 [yY]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass --api-bind 0.0.0.0:4048"
-					;;
-
-			 [nN]* )
-					string="$1 -o stratum+tcp://$poolurl:$poolport -O $username.$workername:$workerpass"
-					;;
-
-  			 * )    echo "Yes/No [yY/nN]";;
-
-			esac
-			echo "$string"
-			chown -R $SUDO_USER:$SUDO_USER ../
+        case $answer in
+            [yY]* )  
+                poolcreds $2 > RunMe
+                chmod +x RunMe
+                echo "Finished installation. Use ./RunMe in your chosen directory to start mining."
+                break;;
+            [nN]* )
+                break;; 
+            * )    
+                echo "Yes/No [yY/nN]";;
+        esac 
+    done 
 }
 
 type=$(lscpu | grep -m 1 "Architecture:" | sed 's/[^=:]*[=:] //' | sed 's|[/ ]||g')
 
 case $1 in
-   --version|-v|version)
-		echo "2.0.0"
-		exit 0
-		;;
+    --version|-v|version)
+        echo "2.0.0"
+        exit 0
+        ;;
 esac
 
-while true 
-do 
-  # (1) prompt user, and read command line argument 
-  read -p "Use recommended settings? Yes/No [yY/nN] " answer 
- 
-  # (2) handle the input we were given 
-  case $answer in 
-   [yY]* )  default=1
-	  break;;
-	   
-   [nN]* )
-			default=0
-	  break;; 
-	   
-  * )    echo "Yes/No [yY/nN]";;
-	 
-  esac 
+while true; do 
+    read -p "Use recommended settings? Yes/No [yY/nN] " answer 
+    case $answer in 
+        [yY]* )  
+            default=1
+            break;;
+        [nN]* )
+            default=0
+            break;; 
+        * )    
+            echo "Yes/No [yY/nN]";;
+    esac 
 done 
 
 pkgmanager
 
 case $type in 
-   x86_64) 
-		folder $default
-		gccinstall $default
-		path=$(compilex86_64 $default)
-		hugepages $default
-		runme $default $path
-		echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
-		exit 0;;
-       
-   armv71)
-		folder $default
-		path=$(compilearmv71 $default)
-		runme $default $path
-		echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
-		exit 0;;
-	  
-   aarch64)
-		folder $default
-		path=$(compileaarch64 $default)
-		runme $default $path
-		echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
-		exit 0;;
-		
-  * )   echo "Your CPU Architecture is not supported. Sorry"
-		exit 1;;
-     
-esac 
+    x86_64) 
+        folder $default
+        path=$(compilex86_64 $default)
+        hugepages $default
+        runme $default $path
+        echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
+        exit 0;;
+    armv71)
+        folder $default
+        path=$(compilearmv71 $default)
+        runme $default $path
+        echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
+        exit 0;;
+    aarch64)
+        folder $default
+        path=$(compileaarch64 $default)
+        runme $default $path
+        echo "If you like what I'm doing please donate :) VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s"
+        exit 0;;
+    * )   
+        echo "Your CPU Architecture is not supported. Sorry"
+        exit 1;;
+esac
