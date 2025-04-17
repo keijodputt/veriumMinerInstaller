@@ -1,6 +1,6 @@
 # veriumMinerInstaller
 
-This script will compiule or copy @VeriConomy 's veriumMiner (https://github.com/VeriConomy/veriumMiner).
+This script will compile or copy @VeriConomy 's veriumMiner (https://github.com/VeriConomy/veriumMiner).
 
 PLEASE READ CAREFULLY!
 
@@ -17,4 +17,4 @@ PLEASE READ CAREFULLY!
 
 Donation:
 
-VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
+participate in the community: https://t.me/VeriCoinandVerium
