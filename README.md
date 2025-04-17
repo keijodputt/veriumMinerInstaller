@@ -15,5 +15,4 @@ PLEASE READ CAREFULLY!
 
 4. sudo ./vMinstaller_linux
 
-Get involved
-Participate in the community: https://t.me/VeriCoinandVerium
+Get involved! Participate in the community: https://t.me/VeriCoinandVerium
