@@ -4,7 +4,14 @@
 #2023-04-27
 #donations: VRM/VRC VJniF5bP9Acy7ce33yR4jRYSQ66Z4vGH8s
 
-# Edit 2020-01-30: Replaced GCC source since it was gone from Github
+# Modifications in keijo's fork:
+# Edit 2020-01-30 	Replaced GCC source since it was gone from Github
+# Edit 2025-04-17 	Rewrite the GCC implementation, we'll use the packages for the OS
+#			Miner source points to 1.6
+#			Update dependencies to newer versions
+#			Recalculate Hugepages to reflect best practices
+#			rewrite the logic for the cpuminer compilation
+#
 #GNU General Public License v3.0 see LICENSE
 
 if [ "$(id -u)" != "0" ]; then
