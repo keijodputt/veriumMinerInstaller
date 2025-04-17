@@ -29,14 +29,35 @@ pkgmanager() {
 }
 
 folder() { 
+    current_dir=$(pwd)
+    default_folder="$current_dir/miner"
+
     if [ $1 -eq 0 ]; then 
-        read -p "Input foldername where to create the files: " answer
+        read -p "Input folder name where to create the files (default: $default_folder): " answer
+        answer=${answer:-$default_folder}
     else
-        answer="miner"
+        answer="$default_folder"
     fi
-    
-    mkdir $answer
-    cd $answer
+
+    if [ -d "$answer" ]; then
+        read -p "Folder '$answer' already exists. Use this folder? Yes/No [yY/nN] " confirm
+        case $confirm in
+            [yY]* ) 
+                cd "$answer"
+                ;;
+            [nN]* )
+                echo "Choose a different folder."
+                folder 0  # Recursive call if the user wants a different folder
+                ;;
+            * )
+                echo "Invalid response. Exiting."
+                exit 1
+                ;;
+        esac
+    else
+        mkdir "$answer"
+        cd "$answer"
+    fi
 }
 
 install_dependencies() {
@@ -71,10 +92,11 @@ hugepages() {
         fi
 
         case $answer in
-            [yY]* )  
+            [yY]* )
                 threads=$(grep -c ^processor /proc/cpuinfo)
-                set=$(grep avx2 /proc/cpuinfo && echo 386 || echo 193)
-                size=$((set*threads))
+                avx2_support=$(grep avx2 /proc/cpuinfo)
+                set_value=$([ -z "$avx2_support" ] && echo 193 || echo 386)
+                size=$((set_value * threads))
 
                 if [ ! "`grep 'vm\.nr_hugepages=' /etc/sysctl.conf 2>/dev/null`" ]; then
                     echo vm.nr_hugepages=$size >> /etc/sysctl.conf
@@ -82,14 +104,20 @@ hugepages() {
                     sed -i "s%vm\.nr_hugepages=.*%vm.nr_hugepages=$size%" /etc/sysctl.conf
                 fi
 
-                sysctl -p
-                break;;
-            [nN]* )  
-                break;; 
-            * )    
-                echo "Yes/No [yY/nN]";;
-        esac 
-    done 
+                if ! sysctl -p; then
+                    echo "Failed to apply hugepages configuration. Please check sysctl settings manually."
+                    exit 1
+                fi
+                break
+                ;;
+            [nN]* )
+                break
+                ;;
+            * )
+                echo "Yes/No [yY/nN]"
+                ;;
+        esac
+    done
 }
 
 runme() {
